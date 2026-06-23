@@ -8,11 +8,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
-import android.widget.Button
-import android.widget.ScrollView
-import android.widget.SeekBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -37,9 +33,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            padding = 40
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 40, 40, 40)
             setBackgroundColor(android.graphics.Color.parseColor("#121212"))
         }
 
@@ -125,9 +121,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 100 && resultCode == Activity.RESULT_OK) {
-            data?.data?.let { uri ->
-                extractTextFromPdf(uri)
-            }
+            data?.data?.let { uri -> extractTextFromPdf(uri) }
         }
     }
 
@@ -144,8 +138,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     tvContent.text = fullText
                     btnPlay.isEnabled = true
                     Toast.makeText(this, "Đã tải xong dữ liệu truyện!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "File PDF không chứa chữ văn bản!", Toast.LENGTH_LONG).show()
                 }
             }
         } catch (e: Exception) {
@@ -156,10 +148,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun processTextIntoSentences(text: String) {
         sentences.clear()
         sentenceOffsets.clear()
-        
         val rawSentences = text.split(Regex("(?<=[.!?])\\s+"))
         var currentOffset = 0
-        
         for (sentence in rawSentences) {
             if (sentence.trim().isNotEmpty()) {
                 sentences.add(sentence)
@@ -176,7 +166,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         currentSentenceIndex = index
         tts.setSpeechRate(playbackSpeed)
-
         val params = Bundle().apply {
             putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, index.toString())
         }
@@ -187,16 +176,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
                 val index = utteranceId?.toIntOrNull() ?: return
-                runOnUiThread {
-                    highlightSentence(index)
-                }
+                runOnUiThread { highlightSentence(index) }
             }
-
             override fun onDone(utteranceId: String?) {
                 val index = utteranceId?.toIntOrNull() ?: return
                 speakFromIndex(index + 1)
             }
-
             override fun onError(utteranceId: String?) {}
         })
     }
@@ -204,16 +189,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun highlightSentence(index: Int) {
         val startPos = sentenceOffsets[index]
         val endPos = startPos + sentences[index].length
-        
         val spannable = SpannableString(fullText)
         spannable.setSpan(
             BackgroundColorSpan(android.graphics.Color.parseColor("#55BB8800")),
-            startPos,
-            endPos,
-            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+            startPos, endPos, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         tvContent.text = spannable
-
         val layout = tvContent.layout
         if (layout != null) {
             val line = layout.getLineForOffset(startPos)
@@ -223,10 +204,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
-        if (::tts.isInitialized) {
-            tts.stop()
-            tts.shutdown()
-        }
+        if (::tts.isInitialized) { tts.stop(); tts.shutdown() }
         super.onDestroy()
     }
 }
