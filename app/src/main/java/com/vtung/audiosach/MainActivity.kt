@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         sbSpeed.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: seekBar?, progress: Int, fromUser: Boolean) {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 playbackSpeed = 0.5f + (progress / 10.0f)
                 tvSpeedLabel.text = "Tốc độ đọc: ${String.format("%.1f", playbackSpeed)}x"
                 tts.setSpeechRate(playbackSpeed)
