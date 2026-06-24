@@ -6,104 +6,74 @@ import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.text.SpannableString
+import android.text.style.BackgroundColorSpan
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.*
 import java.util.*
 
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
-
     private lateinit var tts: TextToSpeech
     private lateinit var tvContent: TextView
-    private lateinit var btnPlay: Button
-    private var currentUri: Uri? = null
-    private var isPlaying = false
+    private val bookManager = BookManager()
+    private var currentDoc: PDDocument? = null
+    private var currentText: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PDFBoxResourceLoader.init(applicationContext)
-
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(30, 30, 30, 30)
-        }
-
-        btnPlay = Button(this).apply { text = "Chọn PDF & Đọc" }
-        layout.addView(btnPlay)
-
-        tvContent = TextView(this).apply { textSize = 16f }
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        tvContent = TextView(this).apply { textSize = 18f }
+        layout.addView(Button(this).apply {
+            text = "Chọn PDF"
+            setOnClickListener { 
+                startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/pdf" }, 100) 
+            }
+        })
         layout.addView(ScrollView(this).apply { addView(tvContent) })
-
         setContentView(layout)
-
         tts = TextToSpeech(this, this)
-
-        btnPlay.setOnClickListener {
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/pdf" }
-            startActivityForResult(Intent.createChooser(intent, "Chọn PDF"), 100)
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 100 && resultCode == Activity.RESULT_OK) {
-            currentUri = data?.data
-            loadPdfAsync(currentUri!!)
-        }
-    }
-
-    // 
-    private fun loadPdfAsync(uri: Uri) {
-        // Coroutine giúp không làm đơ giao diện
-        CoroutineScope(Dispatchers.Main).launch {
-            tvContent.text = "Đang xử lý PDF..."
-            val text = withContext(Dispatchers.IO) {
-                contentResolver.openInputStream(uri)?.use { stream ->
-                    val doc = PDDocument.load(stream)
-                    val content = PDFTextStripper().getText(doc)
-                    doc.close()
-                    content
-                } ?: ""
+        if (resultCode == Activity.RESULT_OK) {
+            val uri = data?.data ?: return
+            CoroutineScope(Dispatchers.IO).launch {
+                currentDoc = PDDocument.load(contentResolver.openInputStream(uri))
+                val text = bookManager.getPageText(currentDoc!!, 0)
+                withContext(Dispatchers.Main) { 
+                    currentText = text
+                    tvContent.text = text
+                    speakText(text)
+                }
             }
-            tvContent.text = text
-            loadProgressAndStart(uri)
         }
-    }
-
-    private fun loadProgressAndStart(uri: Uri) {
-        val prefs = getSharedPreferences("AudioBookPrefs", MODE_PRIVATE)
-        val savedText = prefs.getString(uri.toString(), "")
-        if (savedText!!.isNotEmpty()) {
-            Toast.makeText(this, "Đã khôi phục vị trí cũ", Toast.LENGTH_SHORT).show()
-        }
-        speakText(tvContent.text.toString())
     }
 
     private fun speakText(text: String) {
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "UtteranceId")
-        isPlaying = true
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Lưu lại vị trí khi thoát app
-        currentUri?.let {
-            getSharedPreferences("AudioBookPrefs", MODE_PRIVATE).edit()
-                .putString(it.toString(), "SavedPosition") // Mở rộng thêm logic lưu vị trí cụ thể
-                .apply()
-        }
+        val params = Bundle().apply { putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "karaoke") }
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "karaoke")
     }
 
     override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) tts.language = Locale("vi", "VN")
-    }
-
-    override fun onDestroy() {
-        tts.stop()
-        tts.shutdown()
-        super.onDestroy()
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = Locale("vi", "VN")
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onRangeStart(uId: String?, start: Int, end: Int, frame: Int) {
+                    runOnUiThread {
+                        val spannable = SpannableString(currentText)
+                        spannable.setSpan(BackgroundColorSpan(0xFFFFF176.toInt()), start, end, 0)
+                        tvContent.text = spannable
+                    }
+                }
+                override fun onStart(i: String?) {}
+                override fun onDone(i: String?) {}
+                override fun onError(i: String?) {}
+            })
+        }
     }
 }
