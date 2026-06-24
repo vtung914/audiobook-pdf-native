@@ -9,8 +9,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") } // Dòng này giúp tìm thấy thư viện epublib
+        mavenCentral() // Đây là kho lưu trữ chính thống, không lỗi
     }
 }
 rootProject.name = "AudioBook EPUB"
