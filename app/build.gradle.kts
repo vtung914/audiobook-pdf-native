@@ -25,8 +25,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     
-    // Sửa lại dòng này để JitPack nhận diện đúng bản 3.1
-    implementation("com.github.psiegman:epublib:v3.1") 
+    // Dòng này là bản chính thống, không cần JitPack, không lỗi
+    implementation("nl.siegmann.epublib:epublib-core:3.1") 
     
     implementation("org.jsoup:jsoup:1.16.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
