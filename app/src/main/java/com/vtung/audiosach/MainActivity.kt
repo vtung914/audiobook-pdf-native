@@ -2,7 +2,7 @@ package com.vtung.audiosach
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
+import android.graphics.Color
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -10,70 +10,71 @@ import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.*
+import nl.siegmann.epublib.epub.EpubReader
 import java.util.*
 
-class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+class MainActivity : AppCompatActivity() {
     private lateinit var tts: TextToSpeech
     private lateinit var tvContent: TextView
-    private val bookManager = BookManager()
-    private var currentDoc: PDDocument? = null
     private var currentText: String = ""
+    private var currentBook: nl.siegmann.epublib.domain.Book? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        PDFBoxResourceLoader.init(applicationContext)
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        tvContent = TextView(this).apply { textSize = 18f }
-        layout.addView(Button(this).apply {
-            text = "Chọn PDF"
-            setOnClickListener { 
-                startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/pdf" }, 100) 
+        setContentView(R.layout.activity_main)
+
+        tvContent = findViewById(R.id.tvContent)
+        val btnSelect = findViewById<Button>(R.id.btnSelect)
+        val rvChapters = findViewById<RecyclerView>(R.id.rvChapters)
+        rvChapters.layoutManager = LinearLayoutManager(this)
+
+        btnSelect.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/epub+zip" }
+            startActivityForResult(intent, 100)
+        }
+
+        tts = TextToSpeech(this) { if (it == TextToSpeech.SUCCESS) tts.language = Locale("vi", "VN") }
+        
+        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onRangeStart(uId: String?, start: Int, end: Int, frame: Int) {
+                runOnUiThread {
+                    val span = SpannableString(currentText)
+                    span.setSpan(BackgroundColorSpan(Color.YELLOW), start, end, 0)
+                    tvContent.text = span
+                }
             }
+            override fun onStart(i: String?) {}
+            override fun onDone(i: String?) {}
+            override fun onError(i: String?) {}
         })
-        layout.addView(ScrollView(this).apply { addView(tvContent) })
-        setContentView(layout)
-        tts = TextToSpeech(this, this)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
-            val uri = data?.data ?: return
             CoroutineScope(Dispatchers.IO).launch {
-                currentDoc = PDDocument.load(contentResolver.openInputStream(uri))
-                val text = bookManager.getPageText(currentDoc!!, 0)
-                withContext(Dispatchers.Main) { 
-                    currentText = text
-                    tvContent.text = text
-                    speakText(text)
+                val stream = contentResolver.openInputStream(data?.data!!)
+                currentBook = EpubReader().readEpub(stream)
+                val chapters = currentBook!!.spine.spineReferences
+                withContext(Dispatchers.Main) {
+                    findViewById<RecyclerView>(R.id.rvChapters).adapter = ChapterAdapter(chapters) { loadChapter(it) }
                 }
             }
         }
     }
 
-    private fun speakText(text: String) {
-        val params = Bundle().apply { putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "karaoke") }
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "karaoke")
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts.language = Locale("vi", "VN")
-            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onRangeStart(uId: String?, start: Int, end: Int, frame: Int) {
-                    runOnUiThread {
-                        val spannable = SpannableString(currentText)
-                        spannable.setSpan(BackgroundColorSpan(0xFFFFF176.toInt()), start, end, 0)
-                        tvContent.text = spannable
-                    }
-                }
-                override fun onStart(i: String?) {}
-                override fun onDone(i: String?) {}
-                override fun onError(i: String?) {}
-            })
+    private fun loadChapter(index: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val text = org.jsoup.Jsoup.parse(String(currentBook!!.spine.spineReferences[index].resource.data)).text()
+            withContext(Dispatchers.Main) {
+                currentText = text
+                tvContent.text = text
+                val params = Bundle().apply { putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "id") }
+                tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "id")
+            }
         }
     }
 }
