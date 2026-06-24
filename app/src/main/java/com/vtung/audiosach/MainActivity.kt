@@ -42,8 +42,10 @@ class MainActivity : AppCompatActivity() {
             override fun onRangeStart(uId: String?, start: Int, end: Int, frame: Int) {
                 runOnUiThread {
                     val span = SpannableString(currentText)
-                    span.setSpan(BackgroundColorSpan(Color.YELLOW), start, end, 0)
-                    tvContent.text = span
+                    if (start >= 0 && end <= currentText.length) {
+                        span.setSpan(BackgroundColorSpan(Color.YELLOW), start, end, 0)
+                        tvContent.text = span
+                    }
                 }
             }
             override fun onStart(i: String?) {}
@@ -54,9 +56,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
+        if (resultCode == Activity.RESULT_OK && data?.data != null) {
             CoroutineScope(Dispatchers.IO).launch {
-                val stream = contentResolver.openInputStream(data?.data!!)
+                val stream = contentResolver.openInputStream(data.data!!)
                 currentBook = EpubReader().readEpub(stream)
                 val chapters = currentBook!!.spine.spineReferences
                 withContext(Dispatchers.Main) {
@@ -68,7 +70,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadChapter(index: Int) {
         CoroutineScope(Dispatchers.IO).launch {
-            val text = org.jsoup.Jsoup.parse(String(currentBook!!.spine.spineReferences[index].resource.data)).text()
+            val resource = currentBook!!.spine.spineReferences[index].resource
+            val text = org.jsoup.Jsoup.parse(String(resource.data)).text()
             withContext(Dispatchers.Main) {
                 currentText = text
                 tvContent.text = text
