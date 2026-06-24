@@ -24,8 +24,10 @@ android {
 dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
-    // Sử dụng bản fork ổn định từ JitPack
-    implementation("com.github.psiegman:epublib:3.1")
+    
+    // Sửa lại dòng này để JitPack nhận diện đúng bản 3.1
+    implementation("com.github.psiegman:epublib:v3.1") 
+    
     implementation("org.jsoup:jsoup:1.16.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
