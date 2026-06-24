@@ -5,10 +5,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import nl.siegmann.epublib.domain.SpineReference
 
+// Dùng String thay vì SpineReference để không cần thư viện ngoài
 class ChapterAdapter(
-    private val chapters: List<SpineReference>, 
+    private val chapters: List<String>, 
     private val onClick: (Int) -> Unit
 ) : RecyclerView.Adapter<ChapterAdapter.ViewHolder>() {
 
@@ -23,7 +23,7 @@ class ChapterAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.tv.text = "Chương ${position + 1}"
+        holder.tv.text = chapters[position]
         holder.itemView.setOnClickListener { onClick(position) }
     }
 
