@@ -11,8 +11,6 @@ android {
         applicationId = "com.vtung.audiosach"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -25,8 +23,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     
-    // Dòng này là bản chính thống, không cần JitPack, không lỗi
-    implementation("nl.siegmann.epublib:epublib-core:3.1") 
+    // SỬ DỤNG BẢN NÀY, ĐÂY LÀ BẢN ĐƯỢC CỘNG ĐỒNG ANDROID FIX LỖI ĐÓNG GÓI
+    implementation("com.github.krschult:epublib:3.1") 
     
     implementation("org.jsoup:jsoup:1.16.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
