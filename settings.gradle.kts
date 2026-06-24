@@ -10,6 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") } // BẮT BUỘC CÓ DÒNG NÀY
     }
 }
 rootProject.name = "AudioBook EPUB"
