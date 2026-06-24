@@ -10,8 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") } // Dòng này giúp tìm thấy thư viện epublib
     }
 }
-
-rootProject.name = "audiobook-pdf-native"
+rootProject.name = "AudioBook EPUB"
 include(":app")
