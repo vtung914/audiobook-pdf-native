@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onRangeStart(uId: String?, start: Int, end: Int, frame: Int) {
                 runOnUiThread {
-                    val span = SpannableString(currentText)
                     if (start >= 0 && end <= currentText.length) {
+                        val span = SpannableString(currentText)
                         span.setSpan(BackgroundColorSpan(Color.YELLOW), start, end, 0)
                         tvContent.text = span
                     }
